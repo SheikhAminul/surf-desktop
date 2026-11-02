@@ -1,0 +1,155 @@
+name: Release
+
+# Pushing a tag vX.Y.Z (matching src-tauri/tauri.conf.json) builds installers for macOS, Windows and Linux, with the
+# updater's signatures and latest.json, into a draft release. Publishing the draft makes it the update that installed
+# apps find. See RELEASING.md for the keys and secrets this needs.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check the version and signing setup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The tag matches the app's version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          [ "$TAG" = "v$version" ] || { echo "::error::tag $TAG doesn't match tauri.conf.json version $version"; exit 1; }
+      - name: Updates can be signed and checked
+        env:
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+          HAS_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          [ -n "$PUBKEY" ] || { echo "::error::set the repository variable TAURI_UPDATER_PUBKEY (see RELEASING.md)"; exit 1; }
+          [ "$HAS_PRIVATE_KEY" = "true" ] || { echo "::error::set the secret TAURI_SIGNING_PRIVATE_KEY (see RELEASING.md)"; exit 1; }
+
+  build:
+    name: Build (${{ matrix.name }})
+    needs: check
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (Apple silicon)
+            os: macos-latest
+            args: --target aarch64-apple-darwin
+            targets: aarch64-apple-darwin
+          - name: macOS (Intel)
+            os: macos-latest
+            args: --target x86_64-apple-darwin
+            targets: x86_64-apple-darwin
+          # The oldest supported Ubuntu, so the AppImage and .deb run on older glibc too.
+          - name: Linux
+            os: ubuntu-22.04
+            args: ""
+            targets: ""
+          - name: Windows
+            os: windows-latest
+            args: ""
+            targets: ""
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: browsy-desktop-v2
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: SheikhAminul/browsy-app
+          path: browsy-app
+          token: ${{ secrets.REPOS_TOKEN || github.token }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: SheikhAminul/browsy-core
+          path: browsy-core
+          token: ${{ secrets.REPOS_TOKEN || github.token }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: SheikhAminul/browsy-extension
+          path: browsy-extension
+          token: ${{ secrets.REPOS_TOKEN || github.token }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: browsy-desktop-v2/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: browsy-desktop-v2/.node-version
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.targets }}
+      - name: System libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf
+      - name: browsy-app, browsy-core and the extension
+        run: pnpm bootstrap --yes --no-start
+        working-directory: browsy-app
+      - name: Desktop app dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: browsy-desktop-v2
+      - name: Release configuration (updater key, signed update artifacts)
+        shell: bash
+        env:
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+        run: |
+          node -e '
+            const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey: process.env.PUBKEY } } };
+            require("fs").writeFileSync("browsy-desktop-v2/src-tauri/tauri.release.conf.json", JSON.stringify(config, null, 2));
+          '
+      - name: Code signing, when its secrets are set
+        # Only the secrets that exist are exported: Tauri treats a variable that is set but empty as configured.
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              delimiter="EOF_$(openssl rand -hex 16)"
+              { echo "$name<<$delimiter"; echo "$value"; echo "$delimiter"; } >> "$GITHUB_ENV"
+            fi
+          done
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: browsy-desktop-v2
+          tagName: v__VERSION__
+          releaseName: Browsy v__VERSION__
+          releaseBody: Download the installer for your computer below. Installed apps update themselves once this release is published.
+          releaseDraft: true
+          prerelease: false
+          uploadUpdaterJson: true
+          args: --config src-tauri/tauri.release.conf.json ${{ matrix.args }}

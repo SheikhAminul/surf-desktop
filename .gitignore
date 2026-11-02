@@ -1,0 +1,9 @@
+node_modules
+.cache
+# Made by `pnpm assemble` (scripts/assemble.ts): the bundled server, the UI, the extension, and the Node.js runtime.
+src-tauri/resources/app
+src-tauri/binaries
+src-tauri/target
+src-tauri/gen
+*.log
+.DS_Store

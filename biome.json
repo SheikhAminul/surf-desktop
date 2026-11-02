@@ -1,0 +1,30 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
+	"files": {
+		"includes": ["**", "!node_modules", "!src-tauri/target", "!src-tauri/gen", "!src-tauri/resources", "!src-tauri/binaries", "!.cache"]
+	},
+	"formatter": {
+		"indentStyle": "tab",
+		"lineWidth": 140
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"semicolons": "asNeeded",
+			"arrowParentheses": "always"
+		}
+	},
+	"linter": {
+		"rules": {
+			"recommended": true,
+			"style": {
+				"noNonNullAssertion": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "error",
+				"noShadowRestrictedNames": "off"
+			},
+			"a11y": {}
+		}
+	}
+}
