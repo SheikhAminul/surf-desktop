@@ -1,13 +1,13 @@
 // Stages what the desktop app ships besides its own small executable (`pnpm assemble`; Tauri runs it before `dev`
 // and `build`):
 //
-// - src-tauri/resources/app/: browsy-app's server bundled into one file (with @browsy/core and their dependencies),
-//   its built UI and the automation extension. Nothing of browsy-app is copied by hand or changed: the desktop app runs
-//   exactly the `browsy` command, with `--embedded`.
-// - src-tauri/binaries/browsy-node-<target>: the Node.js runtime it runs on, the version in .node-version, from nodejs.org
-//   (checksum verified), or BROWSY_NODE (a node binary of that version, for offline builds).
+// - src-tauri/resources/app/: surf-app's server bundled into one file (with @surf/core and their dependencies),
+//   its built UI and the automation extension. Nothing of surf-app is copied by hand or changed: the desktop app runs
+//   exactly the `surf` command, with `--embedded`.
+// - src-tauri/binaries/surf-node-<target>: the Node.js runtime it runs on, the version in .node-version, from nodejs.org
+//   (checksum verified), or SURF_NODE (a node binary of that version, for offline builds).
 //
-// browsy-app, and with it browsy-core and the extension, is brought up to date first by its own `pnpm bootstrap`.
+// surf-app, and with it surf-core and the extension, is brought up to date first by its own `pnpm bootstrap`.
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
@@ -43,10 +43,10 @@ const readJson = (path: string): Record<string, unknown> | null => {
 	}
 }
 
-// ── browsy-app ───────────────────────────────────────────────────────────────────────────────────────────────────
+// ── surf-app ───────────────────────────────────────────────────────────────────────────────────────────────────
 
-const app = resolve(process.env.BROWSY_APP_DIR || join(root, '..', 'browsy-app'))
-if (readJson(join(app, 'package.json'))?.name !== 'browsy') fail(`browsy-app isn't at ${app}: run pnpm bootstrap, or set BROWSY_APP_DIR.`)
+const app = resolve(process.env.SURF_APP_DIR || join(root, '..', 'surf-app'))
+if (readJson(join(app, 'package.json'))?.name !== 'surf') fail(`surf-app isn't at ${app}: run pnpm bootstrap, or set SURF_APP_DIR.`)
 
 /** pnpm, as the one running this script (`pnpm assemble`, or Tauri's `pnpm assemble`), or from the PATH. */
 const pnpm = (args: string[], cwd: string) => {
@@ -61,14 +61,14 @@ const pnpm = (args: string[], cwd: string) => {
 	if (result.status !== 0) fail(`pnpm ${args.join(' ')} failed in ${cwd}`)
 }
 
-if (process.env.BROWSY_ASSEMBLE_SKIP_BOOTSTRAP !== '1') {
-	say(`bringing browsy-app up to date (${app})`)
+if (process.env.SURF_ASSEMBLE_SKIP_BOOTSTRAP !== '1') {
+	say(`bringing surf-app up to date (${app})`)
 	pnpm(['bootstrap', '--yes'], app)
 }
-const core = realpathSync(join(app, 'node_modules', '@browsy', 'core'))
+const core = realpathSync(join(app, 'node_modules', '@surf', 'core'))
 for (const [what, path] of [
-	['browsy-app', join(app, 'dist', 'web', 'index.html')],
-	['browsy-core', join(core, 'dist', 'index.js')],
+	['surf-app', join(app, 'dist', 'web', 'index.html')],
+	['surf-core', join(core, 'dist', 'index.js')],
 ] as const) {
 	if (!existsSync(path)) fail(`${what} isn't built (${path} is missing): run pnpm bootstrap.`)
 }
@@ -80,7 +80,7 @@ rmSync(out, { recursive: true, force: true })
 await build({
 	absWorkingDir: app,
 	entryPoints: [join(app, 'server', 'cli.ts')],
-	outfile: join(out, 'server', 'browsy.mjs'),
+	outfile: join(out, 'server', 'surf.mjs'),
 	bundle: true,
 	platform: 'node',
 	format: 'esm',
@@ -88,19 +88,19 @@ await build({
 	// ws's optional native speed-ups: it works without them.
 	external: ['bufferutil', 'utf-8-validate'],
 	// Dependencies written as CommonJS still call require().
-	banner: { js: "import { createRequire as browsyRequire } from 'node:module'; const require = browsyRequire(import.meta.url);" },
+	banner: { js: "import { createRequire as surfRequire } from 'node:module'; const require = surfRequire(import.meta.url);" },
 	legalComments: 'linked',
 	logLevel: 'warning',
 })
-// browsy-app finds its UI (../web) and @browsy/core its extension (../extension) next to the server, and both read
+// surf-app finds its UI (../web) and @surf/core its extension (../extension) next to the server, and both read
 // their version from ../package.json: the desktop app's version, the one people see and update.
 cpSync(join(app, 'dist', 'web'), join(out, 'web'), { recursive: true })
 const version = String(readJson(join(tauri, 'tauri.conf.json'))?.version ?? fail('tauri.conf.json has no version'))
-writeFileSync(join(out, 'package.json'), `${JSON.stringify({ name: 'browsy-desktop', version, private: true }, null, '\t')}\n`)
+writeFileSync(join(out, 'package.json'), `${JSON.stringify({ name: 'surf-desktop', version, private: true }, null, '\t')}\n`)
 const extension = join(core, 'extension')
 if (existsSync(join(extension, 'manifest.json'))) cpSync(extension, join(out, 'extension'), { recursive: true })
-else if (process.env.TAURI_ENV_DEBUG === 'false') fail(`the automation extension isn't in browsy-core (${extension}): run pnpm bootstrap.`)
-else say('no automation extension in browsy-core: automation sessions are unavailable in this build')
+else if (process.env.TAURI_ENV_DEBUG === 'false') fail(`the automation extension isn't in surf-core (${extension}): run pnpm bootstrap.`)
+else say('no automation extension in surf-core: automation sessions are unavailable in this build')
 say(`app assembled (${out})`)
 
 // ── Node.js ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ const arch = target.startsWith('x86_64') ? 'x64' : target.startsWith('aarch64') 
 if (!os || !arch) fail(`Node.js isn't published for ${target}`)
 const binaries = join(tauri, 'binaries')
 // Its own name: Linux packages install it in /usr/bin, where `node` may be another Node.js.
-const binary = join(binaries, `browsy-node-${target}${os === 'win' ? '.exe' : ''}`)
+const binary = join(binaries, `surf-node-${target}${os === 'win' ? '.exe' : ''}`)
 const stamp = `${binary}.version`
 
 const nodeVersionOf = (path: string) => execFileSync(path, ['--version'], { encoding: 'utf8' }).trim().replace(/^v/, '')
@@ -123,10 +123,10 @@ if (existsSync(binary) && existsSync(stamp) && readFileSync(stamp, 'utf8') === n
 	say(`Node.js ${nodeVersion} for ${target} is in place`)
 } else {
 	mkdirSync(binaries, { recursive: true })
-	const local = process.env.BROWSY_NODE
+	const local = process.env.SURF_NODE
 	if (local) {
 		const found = nodeVersionOf(local)
-		if (found !== nodeVersion) fail(`BROWSY_NODE is Node.js ${found}; .node-version asks for ${nodeVersion}`)
+		if (found !== nodeVersion) fail(`SURF_NODE is Node.js ${found}; .node-version asks for ${nodeVersion}`)
 		copyFileSync(local, binary)
 	} else {
 		const name = `node-v${nodeVersion}-${os}-${arch}`

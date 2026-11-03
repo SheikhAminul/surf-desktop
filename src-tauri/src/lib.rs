@@ -1,4 +1,4 @@
-//! Browsy's desktop app: a native window around browsy-app, which does everything else. The app starts the Browsy
+//! Surf's desktop app: a native window around surf-app, which does everything else. The app starts the Surf
 //! server on its own Node.js runtime (`server`), shows its UI (`window`), and keeps itself up to date (`update`).
 
 mod server;
@@ -10,7 +10,7 @@ use tauri_plugin_log::{RotationStrategy, Target, TargetKind};
 
 pub fn run() {
     tauri::Builder::default()
-        // First: a second Browsy would fight over the same profiles; opening it again shows this one.
+        // First: a second Surf would fight over the same profiles; opening it again shows this one.
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             window::focus(app)
         }))
@@ -20,7 +20,7 @@ pub fn run() {
                 .targets([
                     Target::new(TargetKind::Stdout),
                     Target::new(TargetKind::LogDir {
-                        file_name: Some("browsy".into()),
+                        file_name: Some("surf".into()),
                     }),
                 ])
                 .max_file_size(5_000_000)
@@ -40,7 +40,7 @@ pub fn run() {
         })
         .on_window_event(window::on_event)
         .build(tauri::generate_context!())
-        .expect("Browsy couldn't start")
+        .expect("Surf Engine couldn't start")
         .run(|app, event| {
             // Quitting from the menu (⌘Q) or the system: save open profiles first, as when the window closes.
             if let RunEvent::ExitRequested { api, .. } = event

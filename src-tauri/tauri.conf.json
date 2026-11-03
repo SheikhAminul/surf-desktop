@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Browsy",
+	"productName": "Surf Engine",
 	"version": "0.1.0",
-	"identifier": "app.browsy.desktop",
+	"identifier": "app.surf.desktop",
 	"build": {
 		"beforeDevCommand": { "script": "pnpm assemble", "wait": true },
 		"beforeBuildCommand": "pnpm assemble",
@@ -19,8 +19,8 @@
 		"targets": "all",
 		"category": "Productivity",
 		"shortDescription": "Isolated, persistent Chrome profiles",
-		"longDescription": "Browsy keeps isolated, persistent Chrome profiles with end-to-end encrypted sync and sharing, team workspaces, proxies, and automation for scripts and AI agents.",
-		"externalBin": ["binaries/browsy-node"],
+		"longDescription": "Surf Engine keeps isolated, persistent Chrome profiles with end-to-end encrypted sync and sharing, team workspaces, proxies, and automation for scripts and AI agents.",
+		"externalBin": ["binaries/surf-node"],
 		"resources": { "resources/app/": "app/" },
 		"icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
 		"macOS": { "entitlements": "Entitlements.plist", "minimumSystemVersion": "11.0" }
@@ -28,7 +28,7 @@
 	"plugins": {
 		"updater": {
 			"pubkey": "",
-			"endpoints": ["https://github.com/SheikhAminul/browsy-desktop-v2/releases/latest/download/latest.json"],
+			"endpoints": ["https://github.com/SheikhAminul/surf-desktop/releases/latest/download/latest.json"],
 			"windows": { "installMode": "passive" }
 		}
 	}

@@ -1,6 +1,6 @@
 // The message for the state the desktop app is in (it navigates here with #starting, #stopping or #updating).
 const MESSAGES = {
-	starting: 'Starting Browsy…',
+	starting: 'Starting Surf Engine…',
 	stopping: 'Saving open profiles and closing…',
 	updating: 'Installing the update…',
 }

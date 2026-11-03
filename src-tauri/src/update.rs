@@ -67,7 +67,7 @@ async fn check(app: &AppHandle) -> Result<(), tauri_plugin_updater::Error> {
         .map(|n| format!("\n\n{}", n.chars().take(600).collect::<String>()))
         .unwrap_or_default();
     let message = format!(
-        "Browsy {} is available (you have {}).{notes}\n\nInstall it now? Browsy saves open profiles and restarts.",
+        "Surf Engine {} is available (you have {}).{notes}\n\nInstall it now? Surf Engine saves open profiles and restarts.",
         update.version, update.current_version
     );
     if !ask(
@@ -89,7 +89,7 @@ async fn check(app: &AppHandle) -> Result<(), tauri_plugin_updater::Error> {
         log::error!("update install: {e}");
         app.dialog()
             .message(format!(
-                "The update couldn't be installed: {e}\n\nBrowsy restarts as it was."
+                "The update couldn't be installed: {e}\n\nSurf Engine restarts as it was."
             ))
             .title("Update failed")
             .kind(MessageDialogKind::Error)

@@ -1,6 +1,6 @@
 [package]
-name = "browsy-desktop"
-description = "Browsy as a desktop app: browsy-app in a native window"
+name = "surf-desktop"
+description = "Surf as a desktop app: surf-app in a native window"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
@@ -8,7 +8,7 @@ license = "UNLICENSED"
 publish = false
 
 [lib]
-name = "browsy_desktop"
+name = "surf_desktop"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

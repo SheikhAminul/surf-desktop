@@ -1,4 +1,4 @@
-//! The Browsy server: browsy-app's `browsy` command with `--embedded`, on the bundled Node.js runtime. It starts with
+//! The Surf server: surf-app's `surf` command with `--embedded`, on the bundled Node.js runtime. It starts with
 //! the app and tells it, one JSON object per stdout line, where to sign in and how many profiles are open. It stops
 //! when its stdin closes, saving open sessions first: when the app quits, and also if the app ends unexpectedly.
 
@@ -68,7 +68,7 @@ impl Server {
         self.state().origin.clone()
     }
 
-    /// Profiles open in Browsy (queued, starting, running or being saved).
+    /// Profiles open in Surf (queued, starting, running or being saved).
     pub fn open_profiles(&self) -> u32 {
         self.state().open
     }
@@ -82,14 +82,14 @@ impl Server {
         *self.exited.borrow()
     }
 
-    /// Why it failed, from what it said last: its own error line (`browsy: …`) when there is one.
+    /// Why it failed, from what it said last: its own error line (`surf: …`) when there is one.
     fn failure(&self) -> String {
         let state = self.state();
         match state
             .recent
             .iter()
             .rev()
-            .find_map(|line| line.strip_prefix("browsy: "))
+            .find_map(|line| line.strip_prefix("surf: "))
         {
             Some(error) => error.to_string(),
             None => state
@@ -118,13 +118,13 @@ fn sidecar(name: &str) -> std::io::Result<PathBuf> {
     }))
 }
 
-/// Start the server and follow it; the window shows Browsy as soon as it's ready.
+/// Start the server and follow it; the window shows Surf as soon as it's ready.
 pub fn start(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         if let Err(e) = run(&app).await {
             let server = app.state::<Server>();
-            server.state().recent.push_back(format!("browsy: {e}"));
+            server.state().recent.push_back(format!("surf: {e}"));
             server.exited.send_replace(true);
             crate::window::failed(&app, &server.failure());
         }
@@ -133,19 +133,19 @@ pub fn start(app: &AppHandle) {
 
 async fn run(app: &AppHandle) -> std::io::Result<()> {
     // Its own name: Linux packages install it in /usr/bin, next to any other Node.js.
-    let node = sidecar("browsy-node")?;
+    let node = sidecar("surf-node")?;
     let script = app
         .path()
         .resource_dir()
         .map_err(std::io::Error::other)?
         .join("app")
         .join("server")
-        .join("browsy.mjs");
+        .join("surf.mjs");
     let mut command = Command::new(&node);
     command
         .arg(&script)
         .arg("--embedded")
-        // The runtime is Browsy's own: options meant for another Node.js don't apply.
+        // The runtime is Surf's own: options meant for another Node.js don't apply.
         .env_remove("NODE_OPTIONS")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

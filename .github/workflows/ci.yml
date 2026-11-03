@@ -21,35 +21,35 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      # The desktop app is built from browsy-app, which uses browsy-core and the extension: all side by side.
+      # The desktop app is built from surf-app, which uses surf-core and the extension: all side by side.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          path: browsy-desktop-v2
+          path: surf-desktop
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: SheikhAminul/browsy-app
-          path: browsy-app
+          repository: SheikhAminul/surf-app
+          path: surf-app
           token: ${{ secrets.REPOS_TOKEN || github.token }}
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: SheikhAminul/browsy-core
-          path: browsy-core
+          repository: SheikhAminul/surf-core
+          path: surf-core
           token: ${{ secrets.REPOS_TOKEN || github.token }}
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: SheikhAminul/browsy-extension
-          path: browsy-extension
+          repository: SheikhAminul/surf-extension
+          path: surf-extension
           token: ${{ secrets.REPOS_TOKEN || github.token }}
           persist-credentials: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
-          package_json_file: browsy-desktop-v2/package.json
+          package_json_file: surf-desktop/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: browsy-desktop-v2/.node-version
+          node-version-file: surf-desktop/.node-version
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           toolchain: stable
@@ -58,13 +58,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
-      - name: browsy-app, browsy-core and the extension
+      - name: surf-app, surf-core and the extension
         run: pnpm bootstrap --yes --no-start
-        working-directory: browsy-app
+        working-directory: surf-app
       - name: The desktop app
-        working-directory: browsy-desktop-v2
+        working-directory: surf-desktop
         env:
-          BROWSY_ASSEMBLE_SKIP_BOOTSTRAP: "1"
+          SURF_ASSEMBLE_SKIP_BOOTSTRAP: "1"
         run: |
           pnpm install --frozen-lockfile
           pnpm assemble

@@ -1,9 +1,9 @@
-# Working on Browsy for desktop
+# Working on Surf Engine for desktop
 
 ## Principles
 
-- A thin shell: Browsy's UI and logic live in browsy-app and browsy-core. Never re-implement them here; when the
-  desktop needs something from them, add it there (as `browsy --embedded` was) and keep it usable without the desktop.
+- A thin shell: Surf's UI and logic live in surf-app and surf-core. Never re-implement them here; when the
+  desktop needs something from them, add it there (as `surf --embedded` was) and keep it usable without the desktop.
 - The page gets no IPC. Native behaviour comes from the window (`on_navigation`, `on_new_window`, `on_download`) and
   from the server's stdout messages; anything new follows that pattern before exposing commands to the page.
 - The server stops by closing its stdin (it saves sessions first). Never kill it while it may be saving.

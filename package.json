@@ -1,8 +1,8 @@
 {
-	"name": "browsy-desktop",
+	"name": "surf-desktop",
 	"version": "0.1.0",
 	"private": true,
-	"description": "Browsy as a desktop app: browsy-app in a native window, with its own Node.js runtime",
+	"description": "Surf as a desktop app: surf-app in a native window, with its own Node.js runtime",
 	"type": "module",
 	"license": "UNLICENSED",
 	"packageManager": "pnpm@12.15.0",

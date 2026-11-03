@@ -1,8 +1,8 @@
-//! The main window: Browsy's own UI, served by the local server, in a native window.
+//! The main window: Surf's own UI, served by the local server, in a native window.
 //!
 //! The page gets no access to the app (no IPC): native behaviour comes from how the window treats it. It stays on the
 //! server's address; links elsewhere and new windows open in the default browser; downloads go to the Downloads
-//! folder; closing it quits Browsy, after asking when profiles are open.
+//! folder; closing it quits Surf, after asking when profiles are open.
 
 use crate::server::{self, Server};
 use std::path::{Path, PathBuf};
@@ -21,7 +21,7 @@ static ASKING: AtomicBool = AtomicBool::new(false);
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let (navigation, popups, downloads) = (app.clone(), app.clone(), app.clone());
     WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
-        .title("Browsy")
+        .title("Surf Engine")
         .inner_size(1240.0, 800.0)
         .min_inner_size(980.0, 640.0)
         .center()
@@ -61,12 +61,12 @@ fn external(app: &AppHandle, url: &Url) {
     }
 }
 
-/// Show Browsy: sign in to the server that just started.
+/// Show Surf: sign in to the server that just started.
 pub fn show(app: &AppHandle, sign_in: Url) {
     if let Some(window) = app.get_webview_window(MAIN)
         && let Err(e) = window.navigate(sign_in)
     {
-        log::error!("couldn't show Browsy: {e}");
+        log::error!("couldn't show Surf: {e}");
     }
 }
 
@@ -86,7 +86,7 @@ pub fn notice(app: &AppHandle, state: &str) {
     }
 }
 
-/// Bring the window forward (Browsy was opened again).
+/// Bring the window forward (Surf was opened again).
 pub fn focus(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(MAIN) {
         let _ = window.unminimize();
@@ -127,9 +127,9 @@ pub fn request_quit(app: &AppHandle) {
     let app = app.clone();
     app.dialog()
         .message(format!(
-            "{profiles} open. Browsy saves what's in progress before it closes, and picks up the browsers that keep running when it starts again."
+            "{profiles} open. Surf saves what's in progress before it closes, and picks up the browsers that keep running when it starts again."
         ))
-        .title("Quit Browsy?")
+        .title("Quit Surf Engine?")
         .kind(MessageDialogKind::Warning)
         .buttons(MessageDialogButtons::OkCancelCustom("Quit".into(), "Cancel".into()))
         .show(move |yes| {
@@ -160,19 +160,19 @@ pub fn failed(app: &AppHandle, why: &str) {
     log::error!("server failed: {why}");
     let app = app.clone();
     app.dialog()
-        .message(format!("Browsy stopped: {why}\n\nThe log is in {log}."))
-        .title("Browsy")
+        .message(format!("Surf Engine stopped: {why}\n\nThe log is in {log}."))
+        .title("Surf Engine")
         .kind(MessageDialogKind::Error)
         .show(move |_| app.exit(1));
 }
 
 // ── Downloads ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-/// Downloads from Browsy (exports, cookies, recovery kits) go to the Downloads folder, under a name not taken yet.
+/// Downloads from Surf (exports, cookies, recovery kits) go to the Downloads folder, under a name not taken yet.
 fn download(app: &AppHandle, event: DownloadEvent<'_>) -> bool {
     match event {
         DownloadEvent::Requested { url, destination } => {
-            // Only Browsy's own files (from the server, or made by its page: blob:http://127.0.0.1:…/…).
+            // Only Surf's own files (from the server, or made by its page: blob:http://127.0.0.1:…/…).
             if !app
                 .state::<Server>()
                 .origin()
@@ -282,8 +282,8 @@ mod tests {
     fn download_names_are_safe_and_free() {
         let url = Url::parse("http://127.0.0.1:7878/v1/downloads/abc").unwrap();
         assert_eq!(
-            file_name(Path::new("/tmp/Profiles.browsy"), &url),
-            "Profiles.browsy"
+            file_name(Path::new("/tmp/Profiles.surf"), &url),
+            "Profiles.surf"
         );
         assert_eq!(file_name(Path::new(""), &url), "abc");
         assert_eq!(file_name(Path::new("/tmp/a:b?.json"), &url), "a_b_.json");
@@ -295,7 +295,7 @@ mod tests {
             "download"
         );
 
-        let folder = std::env::temp_dir().join(format!("browsy-downloads-{}", std::process::id()));
+        let folder = std::env::temp_dir().join(format!("surf-downloads-{}", std::process::id()));
         std::fs::create_dir_all(&folder).unwrap();
         assert_eq!(available(&folder, "kit.txt"), folder.join("kit.txt"));
         std::fs::write(folder.join("kit.txt"), "").unwrap();

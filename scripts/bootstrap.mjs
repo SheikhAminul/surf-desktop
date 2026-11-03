@@ -1,6 +1,6 @@
 // Guided setup for the desktop app: `pnpm bootstrap`. Checks what building it needs (Node.js, pnpm, Rust and the
-// system's build tools and webview libraries), gets browsy-app next to this folder and sets it up with its own
-// `pnpm bootstrap` (which takes care of browsy-core and the automation extension), then installs this app's tools and
+// system's build tools and webview libraries), gets surf-app next to this folder and sets it up with its own
+// `pnpm bootstrap` (which takes care of surf-core and the automation extension), then installs this app's tools and
 // assembles it. Run it again any time: everything it does is skipped when it's already done. Plain JavaScript, so an
 // old Node.js is told how to update instead of failing to start.
 import { spawn, spawnSync } from 'node:child_process'
@@ -14,18 +14,18 @@ const desktop = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const parent = dirname(desktop)
 const windows = process.platform === 'win32'
 const mac = process.platform === 'darwin'
-const APP_REPO = 'https://github.com/SheikhAminul/browsy-app.git'
+const APP_REPO = 'https://github.com/SheikhAminul/surf-app.git'
 
-const HELP = `Sets up the Browsy desktop app for development: the tools it needs, browsy-app (with browsy-core and the
+const HELP = `Sets up the Surf desktop app for development: the tools it needs, surf-app (with surf-core and the
 automation extension) next to this folder, and this app.
 
   pnpm bootstrap [--app <folder>] [--yes]
 
-  --app <folder>   Where browsy-app is (default: next to this folder, or downloaded there; BROWSY_APP_DIR)
+  --app <folder>   Where surf-app is (default: next to this folder, or downloaded there; SURF_APP_DIR)
   --yes, -y        Don't ask: download what's missing
   --help`
 
-const options = { app: process.env.BROWSY_APP_DIR || undefined, yes: false }
+const options = { app: process.env.SURF_APP_DIR || undefined, yes: false }
 const argv = process.argv.slice(2)
 for (let i = 0; i < argv.length; i++) {
 	const [flag, inline] = argv[i].split(/=(.*)/s)
@@ -146,7 +146,7 @@ const offer = async (name, { winget, brew, manual }) => {
 const checkNode = async () => {
 	const required = Number(/\d+/.exec(readJson(join(desktop, 'package.json'))?.engines?.node ?? '26')?.[0] ?? 26)
 	if (Number(process.versions.node.split('.')[0]) >= required) return ok(`Node.js ${process.versions.node}`)
-	warn(`Node.js ${process.versions.node} is too old: building Browsy needs Node.js ${required} or later.`)
+	warn(`Node.js ${process.versions.node} is too old: building Surf needs Node.js ${required} or later.`)
 	await offer(`Node.js ${required}`, { winget: 'OpenJS.NodeJS.LTS', brew: 'node', manual: 'https://nodejs.org' })
 	fail(`Node.js ${required} or later is needed.`, 'Open a new terminal and run pnpm bootstrap again.')
 }
@@ -214,40 +214,40 @@ const checkSystem = async () => {
 	fail('The WebKitGTK libraries are needed.', 'Install them, then run pnpm bootstrap again.')
 }
 
-// ── browsy-app ───────────────────────────────────────────────────────────────────────────────────────────────────
+// ── surf-app ───────────────────────────────────────────────────────────────────────────────────────────────────
 
-const isApp = (dir) => readJson(join(dir, 'package.json'))?.name === 'browsy'
+const isApp = (dir) => readJson(join(dir, 'package.json'))?.name === 'surf'
 
 const findApp = async () => {
 	if (options.app) {
 		const dir = resolve(options.app)
-		return isApp(dir) ? dir : fail(`${dir} isn't browsy-app.`, 'Its package.json should be named "browsy".')
+		return isApp(dir) ? dir : fail(`${dir} isn't surf-app.`, 'Its package.json should be named "surf".')
 	}
-	const found = [join(parent, 'browsy-app'), join(parent, 'browsy-app-main')].find(isApp)
+	const found = [join(parent, 'surf-app'), join(parent, 'surf-app-main')].find(isApp)
 	if (found) return found
-	const target = join(parent, 'browsy-app')
-	warn("browsy-app isn't next to this folder: the desktop app is built from it.")
+	const target = join(parent, 'surf-app')
+	warn("surf-app isn't next to this folder: the desktop app is built from it.")
 	for (;;) {
 		const answer = await ask(`Type the folder where it is, or press Enter to download it into ${target}:`)
 		if (answer) {
 			const dir = resolve(answer.replace(/^(['"])(.*)\1$/, '$2').replace(/^~(?=$|[/\\])/, homedir()))
 			if (isApp(dir)) return dir
-			warn(`${dir} isn't browsy-app.`)
+			warn(`${dir} isn't surf-app.`)
 			continue
 		}
 		if (existsSync(target)) fail(`${target} is in the way.`, 'Move it, or pass --app <folder>.')
 		const git = which('git')
-		if (!git) fail('Downloading browsy-app needs Git.', 'Install Git (https://git-scm.com/downloads), or pass --app <folder>.')
+		if (!git) fail('Downloading surf-app needs Git.', 'Install Git (https://git-scm.com/downloads), or pass --app <folder>.')
 		await run(tool(git), ['clone', APP_REPO, target], parent)
 		if (isApp(target)) return target
-		if (!interactive) fail("browsy-app couldn't be downloaded.", 'Clone it next to this folder, or pass --app <folder>.')
+		if (!interactive) fail("surf-app couldn't be downloaded.", 'Clone it next to this folder, or pass --app <folder>.')
 	}
 }
 
 // ── Setup ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 const main = async () => {
-	console.log(`${bold('Browsy desktop setup')} ${dim('· tools, browsy-app, and the desktop app')}`)
+	console.log(`${bold('Surf desktop setup')} ${dim('· tools, surf-app, and the desktop app')}`)
 
 	step(1, 'Tools')
 	await checkNode()
@@ -256,21 +256,21 @@ const main = async () => {
 	await checkRust()
 	await checkSystem()
 
-	step(2, 'browsy-app (with browsy-core and the automation extension)')
+	step(2, 'surf-app (with surf-core and the automation extension)')
 	const app = await findApp()
 	ok(`Found at ${app}`)
 	await run(pnpm, ['bootstrap', '--no-start', ...(options.yes ? ['--yes'] : [])], app)
 
 	step(3, 'The desktop app')
 	await run(pnpm, ['install'], desktop)
-	await run(pnpm, ['assemble'], desktop, { ...process.env, BROWSY_APP_DIR: app, BROWSY_ASSEMBLE_SKIP_BOOTSTRAP: '1' })
+	await run(pnpm, ['assemble'], desktop, { ...process.env, SURF_APP_DIR: app, SURF_ASSEMBLE_SKIP_BOOTSTRAP: '1' })
 
 	console.log(`\n${green(bold('Ready.'))}`)
 	console.log(`  ${bold('pnpm dev')}        run the desktop app (the first build of its Rust part takes a few minutes)`)
 	console.log(`  ${bold('pnpm build')}      make installers (src-tauri/target/release/bundle)`)
-	console.log(`  ${bold('pnpm bootstrap')}  again after pulling changes here or in browsy-app`)
-	if (app !== join(parent, 'browsy-app'))
-		console.log(dim(`  browsy-app isn't next to this folder: set BROWSY_APP_DIR=${app} for pnpm dev and pnpm build.`))
+	console.log(`  ${bold('pnpm bootstrap')}  again after pulling changes here or in surf-app`)
+	if (app !== join(parent, 'surf-app'))
+		console.log(dim(`  surf-app isn't next to this folder: set SURF_APP_DIR=${app} for pnpm dev and pnpm build.`))
 }
 
 main()
